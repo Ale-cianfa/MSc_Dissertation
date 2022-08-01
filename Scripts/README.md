@@ -8,6 +8,7 @@ Here I am storing all my own scripts that I used to fulfill the practical analys
 - **Mangrove Mapping Course by NASA:** [here](https://appliedsciences.nasa.gov/join-mission/training/english/arset-remote-sensing-mangroves-support-un-sustainable-development)
 - **GMW landcover**: [here](https://data.unep-wcmc.org/datasets/45)
 - **Forest Height Estimation by NASA:** [here](https://appliedsciences.nasa.gov/join-mission/training/english/arset-forest-mapping-and-monitoring-sar-data)
+- **The GEE Mangrove Mapping Methodology (Yancho et al., 2018) repo:** [here](https://github.com/Blue-Ventures-Conservation/GEEMMM)
 
 
 
