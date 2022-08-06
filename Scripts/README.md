@@ -11,7 +11,7 @@ Here I am storing all my own scripts that I used to fulfill the practical analys
 - **The GEE Mangrove Mapping Methodology (Yancho et al., 2018) repo:** [here](https://github.com/Blue-Ventures-Conservation/GEEMMM)
 - **SERVIR Change detection tutorials:** [here](https://github.com/beeoda/tutorials), [here](https://www.servirglobal.net/Portals/0/Documents/Articles/ChangeDetectionTraining/Module4_Change_Detection_exercise.pdf) and [here](https://servirglobal.net/Portals/0/Documents/Articles/ChangeDetectionTraining/HowToGetStarted.pdf)
 
-Irma things:
+### Irma things:
 - **Cuba shapefile:** [here](https://data.humdata.org/dataset/cod-ab-cub)
 - **Irma Stormtrack:** [here](https://www.hydroshare.org/resource/aa5c9982a4694a19be2fa9299b78e5ca/)
 
