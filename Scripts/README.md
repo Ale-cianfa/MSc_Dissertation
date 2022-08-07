@@ -13,7 +13,8 @@ Here I am storing all my own scripts that I used to fulfill the practical analys
 
 ### Irma things:
 - **Cuba shapefile:** [here](https://data.humdata.org/dataset/cod-ab-cub)
-- **Irma Stormtrack:** [here](https://www.hydroshare.org/resource/aa5c9982a4694a19be2fa9299b78e5ca/)
+- **Irma Stormtrack:** [here](https://www.hydroshare.org/resource/aa5c9982a4694a19be2fa9299b78e5ca/) and [here](https://www.nhc.noaa.gov/data/tcr/index.php?season=2017&basin=atl)
+- **Bahamas shapefile**: [here](https://data.humdata.org/dataset/cod-ab-bhs?)
 
 
 
