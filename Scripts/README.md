@@ -10,6 +10,7 @@ Here I am storing all my own scripts that I used to fulfill the practical analys
 - **Forest Height Estimation by NASA:** [here](https://appliedsciences.nasa.gov/join-mission/training/english/arset-forest-mapping-and-monitoring-sar-data)
 - **The GEE Mangrove Mapping Methodology (Yancho et al., 2018) repo:** [here](https://github.com/Blue-Ventures-Conservation/GEEMMM)
 - **SERVIR Change detection tutorials:** [here](https://github.com/beeoda/tutorials), [here](https://www.servirglobal.net/Portals/0/Documents/Articles/ChangeDetectionTraining/Module4_Change_Detection_exercise.pdf) and [here](https://servirglobal.net/Portals/0/Documents/Articles/ChangeDetectionTraining/HowToGetStarted.pdf)
+- **Palettes for GEE:** [here](https://github.com/gee-community/ee-palettes)
 
 ### Irma things:
 - **Cuba shapefile:** [here](https://data.humdata.org/dataset/cod-ab-cub)
