@@ -18,6 +18,11 @@ Here I am storing all my own scripts that I used to fulfill the practical analys
 - **Bahamas shapefile**: [here](https://data.humdata.org/dataset/cod-ab-bhs?)
 - **Detailed florida shapefile:** [here](https://hub.arcgis.com/datasets/fdot::detailed-florida-state-boundary/explore?location=28.157827%2C-82.778589%2C7.35)
 
+### Idai things: 
+- **Idai track CSV**: [here](http://www.meteo.fr/temps/domtom/La_Reunion/webcmrs9.0/francais/activiteope/data/20182019/2018RE11.html)
+- **Idai Displacement Report**: [here](https://www.internal-displacement.org/sites/default/files/inline-files/GRID-2019-Disasters-Figure-Analysis-Idai.pdf)
+- **General Summary**: [here](https://www.jbarisk.com/flood-services/event-response/cyclone-idai/)
+
 
 
 
