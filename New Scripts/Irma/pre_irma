@@ -226,7 +226,7 @@ var countmask = pixelcount.select(0).gt(25); //filter out all pixels connected t
 var classMask = classifiedrf.select('classification').gt(0);
 var classed = classifiedrf.updateMask(countmask).updateMask(classMask);
 
-Map.addLayer (classed, {min: 1, max: 1, palette:'blue'}, 'Mangrove Extent pre Irma Optical');
+Map.addLayer (classed, {min: 1, max: 1, palette:'blue'}, 'Mangrove Extent, baseline before the Irma hurricane season');
 
 //STEP 6: SAVING DIFFERENT MAPS AND THE FINAL CLASSIFICATION MAP 
 
@@ -242,11 +242,7 @@ Export.image.toDrive({
 //STEP 7: CREATING INDIVIDUAL INDICES VARIABLES FOR QGIS VISUALISATION 
 
 //7.1 NDVI 
-var ndvi_pal = [ '#E7D4E8', '#D9F0D3', '#A6DBA0', '#5AAE61', '#1B7837', '#00441B'];
-
 var ndvi_S2 = S2.select('NDVI').median().clip(aoi); //here i am making an image of NDVI so i can export it
-  //seen similar thing here: https://www.youtube.com/watch?v=qZfiMgwI94o
-Map.addLayer(ndvi_S2, {min: 0, max: 1, palette: ndvi_pal}, 'NDVI S2');
 
 Export.image.toDrive({
   image: ndvi_S2,
@@ -260,8 +256,6 @@ Export.image.toDrive({
 
 //7.2 FALSE COLOR 
 var false_col = S2.select("B8", "B4", "B3").median().clip(aoi);
-Map.addLayer(false_col, {min: 0, max: 3000}, 'False color composite');
-
 
 Export.image.toDrive({
   image: false_col,
@@ -274,8 +268,6 @@ Export.image.toDrive({
 
 //7.3 CMRI IMAGE
 var CMRI = S2.select("CMRI").median().clip(aoi);
-Map.addLayer(CMRI, {min: -2, max: 2}, 'CMRI');
-
 
 Export.image.toDrive({
   image: CMRI,
