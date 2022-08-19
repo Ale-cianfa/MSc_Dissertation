@@ -227,7 +227,7 @@ var countmask = pixelcount.select(0).gt(25); //filter out all pixels connected t
 var classMask = classifiedrf.select('classification').gt(0);
 var classed = classifiedrf.updateMask(countmask).updateMask(classMask);
 
-Map.addLayer (classed, {min: 1, max: 1, palette:'blue'}, 'Mangrove Extent post Irma Optical');
+Map.addLayer (classed, {min: 1, max: 1, palette:'blue'}, 'Mangrove Extent, 1 year post Irma Hurricane season');
 
 //STEP 6: SAVING DIFFERENT MAPS AND THE FINAL CLASSIFICATION MAP 
 
