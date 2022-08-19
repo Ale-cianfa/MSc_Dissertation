@@ -58,14 +58,20 @@ var addCMRI = function(image) {
 return image.addBands(image.select('NDVI').subtract(image.select('NDWI')).rename('CMRI'));
 };
 
-var S2 = S2_IC_temp.map(addCMRI)
-
+var S2 = S2_IC_temp.map(addCMRI);
 
 print('Sentinel 2 image collection', S2);
 
-var S2_composite = S2.median(); //Creating an image for the S2 data, including all banfs
+var S2_composite_temp = S2.median(); //Creating an image for the S2 data, including all banfs
 
-Map.addLayer(S2_composite.clip(aoi), {bands: 'CMRI'}, 'CMRI');
+var NDVIMask = S2_composite_temp.select('NDVI').gt(0.25);
+
+var MNDWIMask = S2_composite_temp.select('MNDWI').gt(-0.50);
+
+var S2_composite = S2_composite_temp
+                            .updateMask(NDVIMask)
+                            .updateMask(MNDWIMask)
+                            
 //STEP 3: DOWNLOADING SENTINEL DATA
   // Filter the Sentinel-1 collection by metadata properties. --> https://developers.google.com/earth-engine/guides/sentinel1
 
@@ -86,9 +92,19 @@ var vv = sentinel1
 
 var vvmean = vv.mean();
 
-var vvimage= ee.Image(vvmean);
+var vvimage= ee.Image(vvmean.clip(aoi));
 
+//Map.addLayer (vvimage, {min:-20 , max:-10}, 'VH Image');
 
+/*Export.image.toDrive({
+  image: vvimage,
+  description: 'VV_pre_irma',
+  scale: 30,
+  region: aoi,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e13
+});
+*/
 //print(vv)
 
 //3.2 SENTINEL 1: VH POLARISATION
@@ -105,14 +121,24 @@ var vh = sentinel1
 
 var vhmean = vh.mean();
 
-var vhimage= ee.Image(vhmean);
+var vhimage= ee.Image(vhmean.clip(aoi));
+//Map.addLayer(vhimage, {min:-20 , max:-4}, 'VV Image');
 
+/*Export.image.toDrive({
+  image: vhimage,
+  description: 'VH_pre_irma',
+  scale: 30,
+  region: aoi,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e13
+});
+*/
 //STEP 4: MERGING SENTINEL 1 AND SENTINEL 2 DATA 
 
 var merged = S2_composite.addBands(vhimage).addBands(vvimage) 
 //this is essentially using S2 as the base image and adding onto it the bands we defined from S1
 
-print(merged)
+//print(merged)
 
 //STEP 5: RUNNING THE RANDOM FOREST CLASSIFIER (RFC)
 
@@ -125,7 +151,7 @@ var bands = ['B8','B11','B4','NDVI','MNDWI', 'CMRI', 'SR', 'NDWI', 'VV', 'VH']
 
 var final = merged.select(bands).clip(aoi); //clipping all to the AOI
 
-print(final);
+//print(final);
 
 //5.2 ASSEMBLING THE SAMPLES FOR THE RFC 
   //this pulls out what values we are seeing for the areas in our training polygons 
@@ -160,15 +186,16 @@ inputProperties: bands
 });
 
 //5.4 EXPLAINING THE MODEL
-print(classifier.explain(),'Explain');
-  //out of bags error = 0.0143
+
+/*print(classifier.explain(),'Explain');
+  //out of bags error = 0.0156
 
 //5.5 TESTING THE MODEL ACCURACY ON THE TESTING DATA
 
-/*var testEvaluation = testing.classify(classifier)
+var testEvaluation = testing.classify(classifier)
 var testAccuracy = testEvaluation.errorMatrix('landcover', 'classification');
-print('Validation error matrix: ', testAccuracy); //0: [5225,59] and 1: [61,4857]
-print('Validation overall accuracy: ', testAccuracy.accuracy()); //0.986
+print('Validation error matrix: ', testAccuracy); //0: [5269,55], 1:[99,4943]
+print('Validation overall accuracy: ', testAccuracy.accuracy()); //0.985
  */
 //5.6 CLASSIFYING THE COMPOSITE USING THE CLASSIFIER RESULT
 var classifiedrf = final.select(bands) // select the predictors
@@ -206,7 +233,7 @@ var ndvi_pal = [ '#E7D4E8', '#D9F0D3', '#A6DBA0', '#5AAE61', '#1B7837', '#00441B
 
 var ndvi_S2 = S2.select('NDVI').median().clip(aoi); //here i am making an image of NDVI so i can export it
   //seen similar thing here: https://www.youtube.com/watch?v=qZfiMgwI94o
-Map.addLayer(ndvi_S2, {min: 0, max: 1, palette: ndvi_pal}, 'NDVI S2');
+//Map.addLayer(ndvi_S2, {min: 0, max: 1, palette: ndvi_pal}, 'NDVI S2');
 
 /*Export.image.toDrive({
   image: ndvi_S2,
@@ -220,7 +247,7 @@ Map.addLayer(ndvi_S2, {min: 0, max: 1, palette: ndvi_pal}, 'NDVI S2');
 
 //7.2 FALSE COLOR 
 var false_col = S2.select("B8", "B4", "B3").median().clip(aoi);
-Map.addLayer(false_col, {min: 0, max: 3000}, 'False color composite');
+//Map.addLayer(false_col, {min: 0, max: 3000}, 'False color composite');
 
 
 /*Export.image.toDrive({
@@ -232,17 +259,48 @@ Map.addLayer(false_col, {min: 0, max: 3000}, 'False color composite');
   maxPixels: 1e13
 });*/
 
-//7.3 RGB IMAGE
-var RGB = S2.select("B4", "B3", "B2").median().clip(aoi);
-Map.addLayer(RGB, {min: 0, max: 3000}, 'RGB Composite');
+//7.3 CMRI IMAGE
+var CMRI = S2.select("CMRI").median().clip(aoi);
+//Map.addLayer(CMRI, {min: -2, max: 2}, 'CMRI');
 
-/*
-Export.image.toDrive({
-  image: RGB,
-  description: 'rgb_pre_irma',
+
+/*Export.image.toDrive({
+  image: CMRI,
+  description: 'CMRI_pre_irma',
   scale: 30,
   region: aoi,
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
 });
 */
+
+//7.3 NDWI IMAGE
+var NDWI = S2.select("NDWI").median().clip(aoi);
+//Map.addLayer(NDWI, {min: -18 , max: 1}, 'NDWI');
+
+/*Export.image.toDrive({
+  image: NDWI,
+  description: 'NDWI_pre_irma',
+  scale: 30,
+  region: aoi,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e13
+});*/
+
+
+//STEP 8: CALCULATING PRE IRMA MANGROVE AREA 2016/17
+
+//Use reduceRegion with a Sum reducer to calculate total area
+
+/*var getPI = classed.multiply(ee.Image.pixelArea()).divide(10000).reduceRegion({
+   reducer:ee.Reducer.sum(),
+   geometry:aoi,
+   scale: 30,
+   maxPixels:1e13,
+   tileScale: 16
+}).get('classification');
+
+print(getPI, 'Mangrove Extent post Irma in ha');
+*/
+
+
