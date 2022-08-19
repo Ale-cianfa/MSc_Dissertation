@@ -58,7 +58,8 @@ return image.addBands(image.select('NDVI').subtract(image.select('NDWI')).rename
 //2.5 - MASKING AND CREATING FINAL COMPOSITE 
 
 var S2_composite_temp = S2.median(); //Creating an image for the S2 data, including all bands
-
+  //tot n. of features = 122
+  
 //2.5.1 - CREATING MASKS FOR NDVI AND MNDWI
 
 var NDVIMask = S2_composite_temp.select('NDVI').gt(0.25);
@@ -180,9 +181,9 @@ var testing = samples.filter(ee.Filter.gte('random', split)); //Subset testing d
     
 //5.4 - PRINTING TRAIN/TEST COUNT
 
-print('Samples n =', samples.aggregate_count('.all')); // n = 109625
-print('Training n =', training.aggregate_count('.all')); // for 80/20 n = 87514
-print('Testing n =', testing.aggregate_count('.all'));// for 80/20 n = 22111
+print('Samples n =', samples.aggregate_count('.all')); // n = 52998
+print('Training n =', training.aggregate_count('.all')); // for 80/20 n = 42329
+print('Testing n =', testing.aggregate_count('.all'));// for 80/20 n = 10669
 
 //5.5 - BEGINNING RANDOM FOREST CLASSIFICATION 
 
@@ -197,14 +198,14 @@ inputProperties: bands
 
 //5.6 - EXPLAINING THE MODEL
 print(classifier.explain(),'Explain');
- //out of bag errors: 0.0116
+ //out of bag errors: 0.0054
 
 //5.7 - TESTING THE MODEL ACCURACY ON THE TESTING DATA
 
 var testEvaluation = testing.classify(classifier) 
 var testAccuracy = testEvaluation.errorMatrix('landcover', 'classification');
-print('Validation error matrix: ', testAccuracy); //0: [18716,149], 1: [101,2907]
-print('Validation overall accuracy: ', testAccuracy.accuracy()); //0.9885
+print('Validation error matrix: ', testAccuracy); //0: [9956,18], 1: [39,685]
+print('Validation overall accuracy: ', testAccuracy.accuracy()); //0.99467
 
 //5.8 - CLASSIFYING THE COMPOSITE USING THE CLASSIFIER RESULT
 
