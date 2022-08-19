@@ -280,3 +280,16 @@ Export.image.toDrive({
 });
 
 
+//STEP 8: CALCULATING PRE IRMA MANGROVE AREA 2016/17
+  //We can use reduceRegion with a Sum reducer to calculate total area
+
+var getPI = classed.multiply(ee.Image.pixelArea()).divide(10000).reduceRegion({ //divide(10000) is what gives us the acres
+   reducer:ee.Reducer.sum(),
+   geometry:aoi,
+   scale: 30,
+   maxPixels:1e13,
+   tileScale: 16
+}).get('classification');
+
+print(getPI, 'Mangrove Extent post Irma in ha');
+
