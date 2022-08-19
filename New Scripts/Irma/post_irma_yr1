@@ -1,0 +1,282 @@
+// SETNTINEL 2 IMAGE COLLECTION 
+// SETP 1: SETTING UP THE GEOMETRY AND CENTERING THE MAP
+  //Looking at the AOI a year after the end of the Irma hurricane season
+  // Dates for season: 1/12/2018 to 31/05/2019
+
+Map.centerObject(aoi, 8);
+
+//STEP 2: CALCULATING THE INDECIS AND DOWNLOADING SENTINEL 2 DATA 
+
+//2.1 - SELECTING POI
+
+var startDate = '2018-12-01';
+var endDate = '2019-05-31';
+
+//2.2 - FUNCTION FOR CALCULATING THE INDECES
+
+//2.2.1 - NDVI = (NIR-Red)/(NIR+Red)
+var addNDVI = function(image) {
+return image.addBands(image.normalizedDifference(['B8', 'B4']).rename('NDVI'));
+};
+
+//2.2.2 - NDWI = (Green-NIR)/(Green-NIR)
+var addNDWI = function(image) {
+return image.addBands(image.normalizedDifference(['B3', 'B8']).rename('NDWI'));
+};
+
+//2.2.3 - MNDWI = (Green-SWIR)/(Green+SWIR)
+var addMNDWI = function(image) {
+return image.addBands(image.normalizedDifference(['B3', 'B11']).rename('MNDWI'));
+};
+
+//2.2.4 - Simple Ratio (SR) = NIR/Red
+var addSR = function(image) {
+return image.addBands(image.select('B8').divide(image.select('B4')).rename('SR'));
+};
+
+
+//2.3 DOWNLOADING THE SENTINEL DATA
+var S2_IC_temp = ee.ImageCollection('COPERNICUS/S2')
+.filterDate(startDate, endDate)
+.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 10)) //data with cloud cover lower than 10% 
+.sort('CLOUDY_PIXEL_PERCENTAGE')
+//adding indices as bands
+.map(addNDVI)
+.map(addNDWI)
+.map(addMNDWI)
+.map(addSR)
+//filter according to drawn boundary 
+.filterBounds(aoi);
+
+print('Sentinel 2 Image Collection before CMRI',S2_IC_temp);
+
+//2.4 - Adding the Combined Mangrove Recognition Index (CMRI) = NDVI - NDWI (Yancho et al. 2018)
+
+var addCMRI = function(image) {
+return image.addBands(image.select('NDVI').subtract(image.select('NDWI')).rename('CMRI'));
+};
+
+var S2 = S2_IC_temp.map(addCMRI);
+
+print('Sentinel 2 image collection', S2);
+
+//2.5 - MASKING AND CREATING FINAL COMPOSITE 
+
+var S2_composite_temp = S2.median(); //Creating an image for the S2 data, including all banfs
+
+//2.5.1 - CREATING MASKS FOR NDVI AND MNDWI
+
+var NDVIMask = S2_composite_temp.select('NDVI').gt(0.25);
+
+var MNDWIMask = S2_composite_temp.select('MNDWI').gt(-0.50);
+
+var S2_composite = S2_composite_temp
+                            .updateMask(NDVIMask)
+                            .updateMask(MNDWIMask)
+                            
+
+//STEP 3: DOWNLOADING SENTINEL DATA
+  // Filter the Sentinel-1 collection by metadata properties. --> https://developers.google.com/earth-engine/guides/sentinel1
+
+var sentinel1 = ee.ImageCollection('COPERNICUS/S1_GRD')
+            .filterDate(startDate, endDate)
+            .filterBounds(aoi);
+            
+//3.1 SENTINEL 1: VV POLARISATION
+
+var vv = sentinel1
+  //Filter to get images with VV polarisation
+  .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV'))
+  .filter(ee.Filter.eq('instrumentMode', 'IW'))
+  .filter(ee.Filter.eq('resolution_meters',10))
+  .select(['VV']);
+
+//3.2 - CREATING A VV IMAGE 
+
+var vvmean = vv.mean();
+
+var vvimage= ee.Image(vvmean);
+
+print(vv)
+
+//3.3 - SENTINEL 1: VH POLARISATION
+
+var vh = sentinel1
+  .filter(ee.Filter.listContains('transmitterReceiverPolarisation', "VH"))
+  .filter(ee.Filter.eq('instrumentMode', 'IW'))
+  .filter(ee.Filter.eq('resolution_meters',10))
+  .select(['VH']);
+
+print(vh)
+
+//2.4 - CREATING A VH IMAGE 
+
+var vhmean = vh.mean();
+
+var vhimage= ee.Image(vhmean);
+
+//STEP 4: MERGING SENTINEL 1 AND SENTINEL 2 DATA AND PLOTTING THE INDICES
+
+//4.1 - MERGING
+var merged = S2_composite.addBands(vhimage).addBands(vvimage) 
+//this is essentially using S2 as the base image and adding onto it the bands we defined from S1
+
+print(merged)
+
+//4.2 - DISPLAYING INDICES AND POLARISATION MAPS 
+
+//4.2.1 - MAKE PALETTES (partially from here: (https://github.com/gee-community/ee-palettes)
+var palettes = require('users/gena/packages:palettes');
+var CMRI_palette = palettes.cmocean.Tempo[7];
+var ndvi_pal = palettes.cmocean.Speed[7]
+
+//4.2.2 - FALSE COLOR COMPOSITE
+Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B8", "B4", "B3"]}, "False color composite, Irma yr1");
+
+//4.2.3 - NDVI 
+Map.addLayer(merged.clip(aoi), {min:0, max:1, bands:["NDVI"], palette: ndvi_pal}, "NDVI composite, Irma yr1");
+
+//4.2.4 - CMRI
+Map.addLayer(merged.clip(aoi), {min:0, max:2, bands:["CMRI"], palette: CMRI_palette}, "CMRI composite, Irma yr1");
+
+//4.2.5 - MNDWI
+Map.addLayer(merged.clip(aoi), {min:-1, max:1, bands:["MNDWI"]}, "MNDWI composite, Irma yr1");
+
+//4.2.6 - VV POL
+Map.addLayer(merged.clip(aoi), {min:-20, max:-4, bands:["VV"]}, "VV composite, Irma yr1");
+
+//4.2.7 - VH POL
+Map.addLayer(merged.clip(aoi), {min:-20, max:-10, bands:["VH"]}, "VH composite, Irma yr1");
+
+//4.2.8 - RGB
+Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B4", "B3", "B2"]}, "RGB composite, Irma yr1");
+
+//NB: These indices are being plotted now because is based on these that the training polygons for the RFC were selected
+
+//STEP 5: RUNNING THE RANDOM FOREST CLASSIFIER (RFC)
+
+//5.1 - SELECTING BANDS AND FEATURE CLASSES FOR THE RFC
+
+var classes = Mangroves.merge(NonMangroves); //merging them into a single feature collection
+
+var bands = ['B8','B11','B4','NDVI','MNDWI', 'CMRI', 'SR', 'NDWI', 'VV', 'VH'] 
+
+var final = merged.select(bands).clip(aoi); //clipping all to the AOI
+
+print(final);
+
+//5.2 - ASSEMBLING THE SAMPLES FOR THE RFC 
+  //this pulls out what values we are seeing for the areas in our training polygons 
+  
+var samples = final.sampleRegions({
+    collection: classes, // Set of geometries selected for training
+    properties: ['landcover'], // Label from each geometry
+    scale: 30 // Make each sample the same size as Sentinel pixel
+    }).randomColumn('random'); // creates a column with random numbers
+
+//5.3 - TRAIN/TEST SPLIT
+//Here we randomly split our samples to set some aside for testing our model's accuracy
+//using the "random" column we created
+var split = 0.8; // Roughly 80% for training, 20% for testing 
+var training = samples.filter(ee.Filter.lt('random', split)); //Subset training data
+var testing = samples.filter(ee.Filter.gte('random', split)); //Subset testing data
+
+    
+//5.4 - TRAIN/TEST COUNT
+
+print('Samples n =', samples.aggregate_count('.all')); // n = 
+print('Training n =', training.aggregate_count('.all')); // n = 
+print('Testing n =', testing.aggregate_count('.all'));// n = 
+
+
+//5.4 - BEGINNING RANDOM FOREST CLASSIFICATION 
+//.smileRandomForest is used to run the model. Here we run the model using 100 trees
+  //and 5 randomly selected predictors per split ("(100,5)")
+  
+var classifier = ee.Classifier.smileRandomForest(100,5).train({ 
+features: training.select(['B8','B11','B4','NDVI','MNDWI', 'CMRI', 'SR', 'NDWI', 'VV', 'VH', 'landcover']), //Train using bands and landcover property
+classProperty: 'landcover', //Pull the landcover property from classes
+inputProperties: bands
+});
+
+//5.5 - EXPLAINING THE MODEL
+
+print(classifier.explain(),'Explain');
+  //out of bags error = 
+
+//5.6 - TESTING THE MODEL ACCURACY ON THE TESTING DATA
+
+var testEvaluation = testing.classify(classifier)
+var testAccuracy = testEvaluation.errorMatrix('landcover', 'classification');
+print('Validation error matrix: ', testAccuracy); //0:  and 1:
+print('Validation overall accuracy: ', testAccuracy.accuracy()); //
+
+//5.7 - CLASSIFYING THE COMPOSITE USING THE CLASSIFIER RESULT
+
+var classifiedrf = final.select(bands) // select the predictors
+    .classify(classifier); // .classify applies the Random Forest
+
+//5.8 - REMOVING THE NOISE FROM THE MODEL
+
+//The model results may be "noisy". To reduce noise, create a mask to mask
+// unconnected pixels
+var pixelcount = classifiedrf.connectedPixelCount(100, false); //Create an image that shows the number of pixels each pixel is connected to
+var countmask = pixelcount.select(0).gt(25); //filter out all pixels connected to 4 or less 
+
+//5.9 - SHOWING MANGROVE ESTENT
+var classMask = classifiedrf.select('classification').gt(0);
+var classed = classifiedrf.updateMask(countmask).updateMask(classMask);
+
+Map.addLayer (classed, {min: 1, max: 1, palette:'blue'}, 'Mangrove Extent post Irma Optical');
+
+//STEP 6: SAVING DIFFERENT MAPS AND THE FINAL CLASSIFICATION MAP 
+
+Export.image.toDrive({
+  image: classed,
+  description: 'post_irma_yr1',
+  scale: 30,
+  region: aoi,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e13
+});
+
+
+//STEP 7: CREATING INDIVIDUAL INDICES VARIABLES FOR QGIS VIZ
+
+//7.1 - NDVI 
+var ndvi_S2 = S2.select('NDVI').median().clip(aoi); 
+Export.image.toDrive({
+  image: ndvi_S2,
+  description: 'NDVI_post_irma_yr1',
+  scale: 30,
+  region: aoi,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e13
+});
+
+
+//7.2 FALSE COLOR 
+var false_col = S2.select("B8", "B4", "B3").median().clip(aoi);
+
+Export.image.toDrive({
+  image: false_col,
+  description: 'falseCol_post_irma_yr1',
+  scale: 30,
+  region: aoi,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e13
+});
+
+//7.4 CMRI IMAGE
+var CMRI = S2.select("CMRI").median().clip(aoi);
+
+Export.image.toDrive({
+  image: CMRI,
+  description: 'CMRI_post_irma_yr1',
+  scale: 30,
+  region: aoi,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e13
+});
+
+
