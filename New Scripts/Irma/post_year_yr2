@@ -297,7 +297,7 @@ var getPI = classed.multiply(ee.Image.pixelArea()).divide(10000).reduceRegion({ 
    tileScale: 16
 }).get('classification');
 
-print(getPI, 'Mangrove Extent post Irma in ha');
+print(getPI, 'Mangrove Extent in ha');
 
 
 
