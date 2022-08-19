@@ -184,9 +184,9 @@ var testing = samples.filter(ee.Filter.gte('random', split)); //Subset testing d
     
 //5.4 - TRAIN/TEST COUNT
 
-print('Samples n =', samples.aggregate_count('.all')); // n = 
-print('Training n =', training.aggregate_count('.all')); // n = 
-print('Testing n =', testing.aggregate_count('.all'));// n = 
+print('Samples n =', samples.aggregate_count('.all')); // n = 49820
+print('Training n =', training.aggregate_count('.all')); // n = 39882
+print('Testing n =', testing.aggregate_count('.all'));// n = 9938
 
 
 //5.4 - BEGINNING RANDOM FOREST CLASSIFICATION 
@@ -202,14 +202,14 @@ inputProperties: bands
 //5.5 - EXPLAINING THE MODEL
 
 print(classifier.explain(),'Explain');
-  //out of bags error = 
+  //out of bags error = 0.0037
 
 //5.6 - TESTING THE MODEL ACCURACY ON THE TESTING DATA
 
 var testEvaluation = testing.classify(classifier)
 var testAccuracy = testEvaluation.errorMatrix('landcover', 'classification');
-print('Validation error matrix: ', testAccuracy); //0:  and 1:
-print('Validation overall accuracy: ', testAccuracy.accuracy()); //
+print('Validation error matrix: ', testAccuracy); //0: [8443,19]  and 1:[21,1455]
+print('Validation overall accuracy: ', testAccuracy.accuracy()); //0.9959
 
 //5.7 - CLASSIFYING THE COMPOSITE USING THE CLASSIFIER RESULT
 
