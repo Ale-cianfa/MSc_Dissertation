@@ -2,7 +2,7 @@
 
 // SETP 1: SETTING UP THE GEOMETRY AND CENTERING THE MAP
   //Right now I want to try and look at the florida Everglades before irma in 2017 to establish a pre-storm baseline of mangrove distribution
-  //Dates for season: 1/12/2016 to 31/05/2017 --> Irma Hurricane was between 30/08/2017 and 13/09/2017, classified as a category 5 hurricane 
+  //Dates for season: 1/12/2015 to 31/05/2017 --> Irma Hurricane was between 30/08/2017 and 13/09/2017, classified as a category 5 hurricane 
     //NB:Irma was the 3rd strongest hurricane at landfall to ever strike in the atlantic (and the most intense hurricane to strike continental US after Katrina)
     
 Map.centerObject(aoi, 8); //This just centers the map to our AOI
@@ -12,7 +12,7 @@ Map.centerObject(aoi, 8); //This just centers the map to our AOI
 //2.1 - SELECTING THE PERIOD OF INTEREST (POI)
   //In this case we are going to be using the months pre-hurricane season 2017 
 
-var startDate = '2016-12-01';
+var startDate = '2015-12-01';
 var endDate = '2017-05-31';
 
   //Creating variables is useful because then we can use the start and end date when downloading S1 data as well
@@ -176,16 +176,16 @@ var samples = final.sampleRegions({
 //Here we randomly split our samples to set some aside for testing our model's accuracy
   //using the "random" column we created
 
-var split = 0.8; // Roughly 80% for training, 20% for testing
-var training = samples.filter(ee.Filter.lt('random', split)); //Subset training data
-var testing = samples.filter(ee.Filter.gte('random', split)); //Subset testing data
+var split = 0.8; 
+var training = samples.filter(ee.Filter.lt('random', split)); 
+var testing = samples.filter(ee.Filter.gte('random', split)); 
 
     
 //5.4 - PRINTING COUNT OF TRAIN/TEST DATA 
 
-print('Samples n =', samples.aggregate_count('.all')); // n = 52156
-print('Training n =', training.aggregate_count('.all')); // for 80/20 n = 41642
-print('Testing n =', testing.aggregate_count('.all'));// for 80/20 n = 10428
+print('Samples n =', samples.aggregate_count('.all'));
+print('Training n =', training.aggregate_count('.all'));
+print('Testing n =', testing.aggregate_count('.all'));
 
 //5.5 - BEGINNING RANDOM FOREST CLASSIFICATION 
 //.smileRandomForest is used to run the model. Here we run the model using 100 trees
@@ -201,14 +201,14 @@ inputProperties: bands
 //This function shows the out-of.bag error for the model but also shwos the importnace of each contributing variable to the outcome of the classifier
 
 print(classifier.explain(),'Explain');
-  //out of bags error = 0.0156
+
 
 //5.6 - TESTING THE MODEL ACCURACY ON THE TESTING DATA
 
 var testEvaluation = testing.classify(classifier)
 var testAccuracy = testEvaluation.errorMatrix('landcover', 'classification');
-print('Validation error matrix: ', testAccuracy); //0: [5269,55], 1:[99,4943]
-print('Validation overall accuracy: ', testAccuracy.accuracy()); //0.985
+print('Validation error matrix: ', testAccuracy); 
+print('Validation overall accuracy: ', testAccuracy.accuracy()); 
 
 //5.7 - CLASSIFYING THE COMPOSITE USING THE CLASSIFIER RESULT
 
@@ -278,7 +278,7 @@ Export.image.toDrive({
   maxPixels: 1e13
 });
 
-//STEP 8: CALCULATING PRE IRMA MANGROVE AREA 2016/17
+//STEP 8: CALCULATING PRE IRMA MANGROVE AREA 2015/17
   //We can use reduceRegion with a Sum reducer to calculate total area
 
 var getPI = classed.multiply(ee.Image.pixelArea()).divide(10000).reduceRegion({ //divide(10000) is what gives us the acres
