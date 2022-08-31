@@ -14,7 +14,7 @@ Map.centerObject(aoi, 8);
  //In the Mozambique Channel (MZ), the rain and cyclone season is usually the entire austral summer 
     //from November to April, with peak activity between January and March. Idai took place between the 4th and 21st of March 2019
   //For this analysis I am going to use the months before austral summer as the interval to calculate variables
-    //this meand June to October. This pre-season script is going to run between june 2018 and october 2018
+    //this meand June to October. This pre-season script is going to run between june 2017 and october 2018
 
 var startDate = '2017-06-01';
 var endDate = '2018-10-31';
@@ -106,15 +106,15 @@ var vvimage= ee.Image(vvmean.clip(aoi));
 
 //3.1.2 - EXPORTING VH IMAGE TO DRIVE
 
-/*Export.image.toDrive({
+Export.image.toDrive({
   image: vvimage,
-  description: 'VV_pre_irma',
+  description: 'VV_pre_idai',
   scale: 30,
   region: aoi,
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
 });
-*/
+
 //print(vv)
 
 //3.2 - SENTINEL 1: VH POLARISATION
@@ -139,7 +139,7 @@ var vhimage= ee.Image(vhmean.clip(aoi));
 
 /*Export.image.toDrive({
   image: vhimage,
-  description: 'VH_pre_irma',
+  description: 'VH_pre_idai',
   scale: 30,
   region: aoi,
   fileFormat: 'GeoTIFF',
