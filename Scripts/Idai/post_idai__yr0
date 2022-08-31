@@ -1,3 +1,5 @@
+//GEE SCRIPT FOR POST IDAI YR0 
+
 // SETP 1: SETTING UP THE GEOMETRY AND CENTERING THE MAP
   //NB: Based on the Storm track, the GMW and other maps of Mangroves in Mozambique, I decided 
     //to restrict the AOI to the area surrounding Beira (which the storm passed right over)
@@ -12,7 +14,7 @@ Map.centerObject(aoi, 8);
  //In the Mozambique Channel (MZ), the rain and cyclone season is usually the entire austral summer 
     //from November to April, with peak activity between January and March. Idai took place between the 4th and 21st of March 2019
   //For this analysis I am going to use the months before austral summer as the interval to calculate variables
-    //this meand June to October. This pre-season script is going to run between june 2018 and october 2018
+    //this meand June to October. This post-season script is going to run between june 2019 and october 2019
 
 var startDate = '2019-06-01';
 var endDate = '2019-10-31';
@@ -54,7 +56,7 @@ var S2_IC_temp = ee.ImageCollection('COPERNICUS/S2')
 //filter according to drawn boundary 
 .filterBounds(aoi);
 
-print('Pre-Idai S2 Image collection before CMRI',S2_IC_temp); //a total of 197 objects
+print('Post-Idai S2 Image collection before CMRI',S2_IC_temp); //a total of 197 objects
 
 //2.4 Adding the Combined Mangrove Recognition Index (CMRI) = NDVI - NDWI (Yancho et al. 2018)
 
@@ -64,7 +66,7 @@ return image.addBands(image.select('NDVI').subtract(image.select('NDWI')).rename
 
 var S2 = S2_IC_temp.map(addCMRI);
 
-print('Final Pre-Idai S2 image collection', S2);
+print('Final Post-Idai S2 image collection', S2);
 
 var S2_composite_temp = S2.median(); //Creating an image for the S2 data, including all banfs
 
@@ -106,7 +108,7 @@ var vvimage= ee.Image(vvmean.clip(aoi));
 
 /*Export.image.toDrive({
   image: vvimage,
-  description: 'VV_pre_irma',
+  description: 'VV_idai_yr0',
   scale: 30,
   region: aoi,
   fileFormat: 'GeoTIFF',
@@ -137,7 +139,7 @@ var vhimage= ee.Image(vhmean.clip(aoi));
 
 /*Export.image.toDrive({
   image: vhimage,
-  description: 'VH_pre_irma',
+  description: 'VH_idai_yr0',
   scale: 30,
   region: aoi,
   fileFormat: 'GeoTIFF',
@@ -162,25 +164,25 @@ var ndvi_pal = palettes.cmocean.Speed[7]
 
 
 //4.1.2 - FALSE COLOR COMPOSITE
-/*Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B8", "B4", "B3"]}, "False color composite, pre-Idai");
+/*Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B8", "B4", "B3"]}, "False color composite, post-Idai");
 
 //4.1.3 - NDVI 
-Map.addLayer(merged.clip(aoi), {min:0, max:1, bands:["NDVI"], palette: ndvi_pal}, "NDVI composite,  pre-Idai ");
+Map.addLayer(merged.clip(aoi), {min:0, max:1, bands:["NDVI"], palette: ndvi_pal}, "NDVI composite,  post-Idai ");
 
 //4.1.4 - CMRI
-Map.addLayer(merged.clip(aoi), {min:0, max:2, bands:["CMRI"], palette: CMRI_palette}, "CMRI composite,  pre-Idai ");
+Map.addLayer(merged.clip(aoi), {min:0, max:2, bands:["CMRI"], palette: CMRI_palette}, "CMRI composite,  post-Idai ");
 
 //4.1.5 - MNDWI
-Map.addLayer(merged.clip(aoi), {min:-1, max:1, bands:["MNDWI"]}, "MNDWI composite,  pre-Idai ");
+Map.addLayer(merged.clip(aoi), {min:-1, max:1, bands:["MNDWI"]}, "MNDWI composite,  post-Idai ");
 
 //4.1.6 - VV POL
-Map.addLayer(merged.clip(aoi), {min:-20, max:-4, bands:["VV"]}, "VV composite,  pre-Idai ");
+Map.addLayer(merged.clip(aoi), {min:-20, max:-4, bands:["VV"]}, "VV composite,  post-Idai ");
 
 //4.1.7 - VH POL
-Map.addLayer(merged.clip(aoi), {min:-20, max:-10, bands:["VH"]}, "VH composite,  pre-Idai ");
+Map.addLayer(merged.clip(aoi), {min:-20, max:-10, bands:["VH"]}, "VH composite,  post-Idai ");
 
 //4.1.8 - RGB
-Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B4", "B3", "B2"]}, "RGB composite, pre-Idai");
+Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B4", "B3", "B2"]}, "RGB composite, post-Idai");
 */
 //STEP 5: RUNNING THE RANDOM FOREST CLASSIFIER (RFC)
 
@@ -213,11 +215,11 @@ var testing = samples.filter(ee.Filter.gte('random', split)); //Subset testing d
     
 //Print these variables to see how much training and testing data you are using
 
-/*
-print('Samples n =', samples.aggregate_count('.all')); // n = 52156
-print('Training n =', training.aggregate_count('.all')); // for 80/20 n = 41642
-print('Testing n =', testing.aggregate_count('.all'));// for 80/20 n = 10428
-*/
+
+print('Samples n =', samples.aggregate_count('.all')); 
+print('Training n =', training.aggregate_count('.all')); 
+print('Testing n =', testing.aggregate_count('.all'));
+
 //5.3 BEGINNING RANDOM FOREST CLASSIFICATION 
 
 //.smileRandomForest is used to run the model. Here we run the model using 100 trees
@@ -230,16 +232,16 @@ inputProperties: bands
 });
 
 //5.4 EXPLAINING THE MODEL
-/*print(classifier.explain(),'Explain');
-*/
+print(classifier.explain(),'Explain');
+
 
 //5.5 TESTING THE MODEL ACCURACY ON THE TESTING DATA
 
-/*var testEvaluation = testing.classify(classifier)
+var testEvaluation = testing.classify(classifier)
 var testAccuracy = testEvaluation.errorMatrix('landcover', 'classification');
 print('Validation error matrix: ', testAccuracy); 
 print('Validation overall accuracy: ', testAccuracy.accuracy()); 
- */
+ 
  
 //5.6 CLASSIFYING THE COMPOSITE USING THE CLASSIFIER RESULT
 var classifiedrf = final.select(bands) // select the predictors
@@ -261,7 +263,7 @@ Map.addLayer (gmw, {}, 'Global Mangrove Watch map for 2019');
 
 //STEP 6: SAVING DIFFERENT MAPS AND THE FINAL CLASSIFICATION MAP 
 
-/*Export.image.toDrive({
+Export.image.toDrive({
   image: classed,
   description: 'post_idai_yr0',
   scale: 30,
@@ -269,14 +271,14 @@ Map.addLayer (gmw, {}, 'Global Mangrove Watch map for 2019');
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
 });
-*/
+
 //STEP 7: CREATING INDIVIDUAL INDICES VARIABLES FOR QGIS VIZ
 
 //7.1 NDVI 
 var ndvi_S2 = S2.select('NDVI').median().clip(aoi); //here i am making an image of NDVI so i can export it
   //seen similar thing here: https://www.youtube.com/watch?v=qZfiMgwI94o
 
-/*Export.image.toDrive({
+Export.image.toDrive({
   image: ndvi_S2,
   description: 'NDVI_idai_yr0',
   scale: 30,
@@ -284,25 +286,25 @@ var ndvi_S2 = S2.select('NDVI').median().clip(aoi); //here i am making an image 
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
 });
-*/
+
 
 //7.2 FALSE COLOR 
 var false_col = S2.select("B8", "B4", "B3").median().clip(aoi);
 
-/*Export.image.toDrive({
+Export.image.toDrive({
   image: false_col,
   description: 'falseCol_idai_yr0',
   scale: 30,
   region: aoi,
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
-});*/
+});
 
 
 //7.3 CMRI IMAGE
 var CMRI = S2.select("CMRI").median().clip(aoi);
 
-/*Export.image.toDrive({
+Export.image.toDrive({
   image: CMRI,
   description: 'CMRI_idai_yr0',
   scale: 30,
@@ -310,12 +312,12 @@ var CMRI = S2.select("CMRI").median().clip(aoi);
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
 });
-*/
+
 
 //7.4 NDWI IMAGE
 var NDWI = S2.select("NDWI").median().clip(aoi);
 
-/*Export.image.toDrive({
+Export.image.toDrive({
   image: NDWI,
   description: 'NDWI_idai_yr0',
   scale: 30,
@@ -323,7 +325,20 @@ var NDWI = S2.select("NDWI").median().clip(aoi);
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
 });
-*/
+
+//STEP 8: CALCULATING MANGROVE AREA 
+var getPI = classed.multiply(ee.Image.pixelArea()).divide(10000).reduceRegion({
+   reducer:ee.Reducer.sum(),
+   geometry:aoi,
+   scale: 50,
+   maxPixels:1e13,
+   tileScale: 16
+}).get('classification');
+
+print(getPI, 'Mangrove Extent post Idai yr0 in ha');
+
+
+
 
 
 
