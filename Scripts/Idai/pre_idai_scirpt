@@ -1,3 +1,5 @@
+//Script taken from the GEE code editor
+
 // SETP 1: SETTING UP THE GEOMETRY AND CENTERING THE MAP
   //NB: Based on the Storm track, the GMW and other maps of Mangroves in Mozambique, I decided 
     //to restrict the AOI to the area surrounding Beira (which the storm passed right over)
@@ -7,42 +9,41 @@ Map.centerObject(aoi, 8);
 
 //STEP 2: CALCULATING THE INDECIS AND DOWNLOADING SENTINEL 2 DATA 
 
-//2.1 - SELECT POI
+//2.1 Select the period of interest 
 
  //In the Mozambique Channel (MZ), the rain and cyclone season is usually the entire austral summer 
     //from November to April, with peak activity between January and March. Idai took place between the 4th and 21st of March 2019
   //For this analysis I am going to use the months before austral summer as the interval to calculate variables
     //this meand June to October. This pre-season script is going to run between june 2018 and october 2018
 
-var startDate = '2018-06-01';
+var startDate = '2017-06-01';
 var endDate = '2018-10-31';
-
   //This is useful because then we can use the start and end date when downloading S1 data as well
 
-//2.2 - FUNCTION FOR CALCULATING THE INDECES
+//2.2 FUNCTION FOR CALCULATING THE INDECES
 
-//2.2.1 - NDVI = (NIR-Red)/(NIR+Red)
+//NDVI = (NIR-Red)/(NIR+Red)
 var addNDVI = function(image) {
 return image.addBands(image.normalizedDifference(['B8', 'B4']).rename('NDVI'));
 };
 
-//2.2.2 - NDWI = (Green-NIR)/(Green-NIR)
+//NDWI = (Green-NIR)/(Green-NIR)
 var addNDWI = function(image) {
 return image.addBands(image.normalizedDifference(['B3', 'B8']).rename('NDWI'));
 };
 
-//2.2.3 - MNDWI = (Green-SWIR)/(Green+SWIR)
+//MNDWI = (Green-SWIR)/(Green+SWIR)
 var addMNDWI = function(image) {
 return image.addBands(image.normalizedDifference(['B3', 'B11']).rename('MNDWI'));
 };
 
-//2.2.4 - Simple Ratio (SR) = NIR/Red
+//Simple Ratio (SR) = NIR/Red
 var addSR = function(image) {
 return image.addBands(image.select('B8').divide(image.select('B4')).rename('SR'));
 };
 
 
-//2.3 - DOWNLOADING THE SENTINEL DATA
+//2.3 DOWNLOADING THE SENTINEL DATA
 var S2_IC_temp = ee.ImageCollection('COPERNICUS/S2')
 //filter start and end date
 .filterDate(startDate, endDate)
@@ -55,9 +56,9 @@ var S2_IC_temp = ee.ImageCollection('COPERNICUS/S2')
 //filter according to drawn boundary 
 .filterBounds(aoi);
 
-print('Pre-Idai S2 Image collection before CMRI',S2_IC_temp); //a total of 197 objects
+//print('Pre-Idai S2 Image collection before CMRI',S2_IC_temp); //a total of 197 objects
 
-//2.4 - CALCULATING AND ADDING THE COMBINEDMANGROVE RECOGNITION INDEX (CMRI) = NDVI - NDWI 
+//2.4 Adding the Combined Mangrove Recognition Index (CMRI) = NDVI - NDWI (Yancho et al. 2018)
 
 var addCMRI = function(image) {
 return image.addBands(image.select('NDVI').subtract(image.select('NDWI')).rename('CMRI'));
@@ -65,9 +66,7 @@ return image.addBands(image.select('NDVI').subtract(image.select('NDWI')).rename
 
 var S2 = S2_IC_temp.map(addCMRI);
 
-print('Final Pre-Idai S2 image collection', S2);
-
-//2.5 - MAKING AN IMAGE COMPOSITE AND MASKING NDVI
+//print('Final Pre-Idai S2 image collection', S2);
 
 var S2_composite_temp = S2.median(); //Creating an image for the S2 data, including all banfs
 
@@ -79,7 +78,7 @@ var S2_composite = S2_composite_temp
                             .updateMask(NDVIMask)
                             .updateMask(MNDWIMask)
 
-print(S2_composite)
+//print(S2_composite)
 
 //STEP 3: DOWNLOADING SENTINEL DATA
   // Filter the Sentinel-1 collection by metadata properties. --> https://developers.google.com/earth-engine/guides/sentinel1
@@ -91,7 +90,7 @@ var sentinel1 = ee.ImageCollection('COPERNICUS/S1_GRD')
 //3.1 - SENTINEL 1: VV POLARISATION
 
 var vv = sentinel1
-  //Filter to get images with VV polarization.
+  //Filter to get images with VV and VH dual polarization.
   .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV'))
   .filter(ee.Filter.eq('instrumentMode', 'IW'))
   .filter(ee.Filter.eq('resolution_meters',10))
@@ -103,9 +102,11 @@ var vvmean = vv.mean();
 
 var vvimage= ee.Image(vvmean.clip(aoi));
 
+//Map.addLayer (vvimage, {min:-20 , max:-10}, 'VH Image');
+
 //3.1.2 - EXPORTING VH IMAGE TO DRIVE
 
-Export.image.toDrive({
+/*Export.image.toDrive({
   image: vvimage,
   description: 'VV_pre_irma',
   scale: 30,
@@ -113,8 +114,8 @@ Export.image.toDrive({
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
 });
-
-print(vv)
+*/
+//print(vv)
 
 //3.2 - SENTINEL 1: VH POLARISATION
 
@@ -132,9 +133,11 @@ var vhmean = vh.mean();
 
 var vhimage= ee.Image(vhmean.clip(aoi));
 
+//Map.addLayer(vhimage, {min:-20 , max:-4}, 'VV Image');
+
 //3.2.2 EXPORTING VH IMAGE TO DRIVE
 
-Export.image.toDrive({
+/*Export.image.toDrive({
   image: vhimage,
   description: 'VH_pre_irma',
   scale: 30,
@@ -142,6 +145,7 @@ Export.image.toDrive({
   fileFormat: 'GeoTIFF',
   maxPixels: 1e13
 });
+*/
 
 
 //STEP 4: MERGING SENTINEL 1 AND SENTINEL 2 DATA 
@@ -158,8 +162,9 @@ var palettes = require('users/gena/packages:palettes');
 var CMRI_palette = palettes.cmocean.Tempo[7];
 var ndvi_pal = palettes.cmocean.Speed[7]
 
+
 //4.1.2 - FALSE COLOR COMPOSITE
-Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B8", "B4", "B3"]}, "False color composite, pre-Idai");
+/*Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B8", "B4", "B3"]}, "False color composite, pre-Idai");
 
 //4.1.3 - NDVI 
 Map.addLayer(merged.clip(aoi), {min:0, max:1, bands:["NDVI"], palette: ndvi_pal}, "NDVI composite,  pre-Idai ");
@@ -178,10 +183,10 @@ Map.addLayer(merged.clip(aoi), {min:-20, max:-10, bands:["VH"]}, "VH composite, 
 
 //4.1.8 - RGB
 Map.addLayer(merged.clip(aoi), {min:0, max:3000, bands:["B4", "B3", "B2"]}, "RGB composite, pre-Idai");
-
+*/
 //STEP 5: RUNNING THE RANDOM FOREST CLASSIFIER (RFC)
 
-//5.1 - SELECTING BANDS AND FEATURE CLASSES FOR THE RFC
+//5.1 SELECTING BANDS AND FEATURE CLASSES FOR THE RFC
 
 var classes = Mangroves.merge(NonMangroves); //merging them into a single feature collection
 
@@ -192,31 +197,30 @@ var final = merged.select(bands).clip(aoi); //clipping all to the AOI
 
 //print(final);
 
-//5.2 - ASSEMBLING THE SAMPLES FOR THE RFC 
+//5.2 ASSEMBLING THE SAMPLES FOR THE RFC 
   //this pulls out what values we are seeing for the areas in our training polygons 
   
 var samples = final.sampleRegions({
     collection: classes, // Set of geometries selected for training
     properties: ['landcover'], // Label from each geometry
-    scale: 10 // Make each sample the same size as Sentinel pixel
+    scale: 30 // Make each sample the same size as Sentinel pixel
     }).randomColumn('random'); // creates a column with random numbers
-
-//5.3 - TRAIN/TEST SPLIT
 
 //Here we randomly split our samples to set some aside for testing our model's accuracy
 //using the "random" column we created
-
 var split = 0.8; // Roughly 80% for training, 20% for testing (can also work as 7/3 and has a higher accuracy)
 var training = samples.filter(ee.Filter.lt('random', split)); //Subset training data
 var testing = samples.filter(ee.Filter.gte('random', split)); //Subset testing data
 
-//5.4 - PRINTING COUNT OF TRAIN/TEST DATA 
+    
+//Print these variables to see how much training and testing data you are using
 
-print('Samples n =', samples.aggregate_count('.all')); // n = 52156
-print('Training n =', training.aggregate_count('.all')); // for 80/20 n = 41642
-print('Testing n =', testing.aggregate_count('.all'));// for 80/20 n = 10428
 
-//5.5 - BEGINNING RANDOM FOREST CLASSIFICATION 
+print('Samples n =', samples.aggregate_count('.all')); 
+print('Training n =', training.aggregate_count('.all')); 
+print('Testing n =', testing.aggregate_count('.all'));
+
+//5.3 BEGINNING RANDOM FOREST CLASSIFICATION 
 
 //.smileRandomForest is used to run the model. Here we run the model using 100 trees
   //and 5 randomly selected predictors per split ("(100,5)")
@@ -227,39 +231,36 @@ classProperty: 'landcover', //Pull the landcover property from classes
 inputProperties: bands
 });
 
-//5.6 - EXPLAINING THE MODEL
-
+//5.4 EXPLAINING THE MODEL
 print(classifier.explain(),'Explain');
 
-//5.7 - TESTING THE MODEL ACCURACY ON THE TESTING DATA
+//5.5 TESTING THE MODEL ACCURACY ON THE TESTING DATA
 
 var testEvaluation = testing.classify(classifier)
 var testAccuracy = testEvaluation.errorMatrix('landcover', 'classification');
 print('Validation error matrix: ', testAccuracy); 
-print('Validation overall accuracy: ', testAccuracy.accuracy()); 
-
-//5.8 - CLASSIFYING THE COMPOSITE USING THE CLASSIFIER RESULT
-
+print('Validation overall accuracy: ', testAccuracy.accuracy());
+ 
+//5.6 CLASSIFYING THE COMPOSITE USING THE CLASSIFIER RESULT
 var classifiedrf = final.select(bands) // select the predictors
     .classify(classifier); // .classify applies the Random Forest
 
-//5.9 - REMOVING THE NOISE FROM THE MODEL
+//5.7 REMOVING THE NOISE FROM THE MODEL
+
 //The model results may be "noisy". To reduce noise, create a mask to mask
 // unconnected pixels
-
 var pixelcount = classifiedrf.connectedPixelCount(100, false); //Create an image that shows the number of pixels each pixel is connected to
 var countmask = pixelcount.select(0).gt(25); //filter out all pixels connected to 4 or less 
 
-//5.10 -  SHOWING MANGROVE ESTENT
+//5.8 SHOWING MANGROVE ESTENT
 var classMask = classifiedrf.select('classification').gt(0);
 var classed = classifiedrf.updateMask(countmask).updateMask(classMask);
 
-Map.addLayer (classed, {min: 1, max: 1, palette:'blue'}, 'Mangrove Extent pre-Idai');
+Map.addLayer (classed, {min: 1, max: 1, palette:'blue'}, 'Mangrove Extent pre-Idea');
 Map.addLayer (gmw, {}, 'Global Mangrove Watch map for 2019');
 
 //STEP 6: SAVING DIFFERENT MAPS AND THE FINAL CLASSIFICATION MAP 
 
-//6.1 - CLASSIFICATION MAP
 Export.image.toDrive({
   image: classed,
   description: 'pre_idai',
@@ -269,17 +270,9 @@ Export.image.toDrive({
   maxPixels: 1e13
 });
 
-//6.2 - AOI 
-Export.table.toDrive({
-  collection: aoi,
-  description: 'aoi_IDAI',
-  folder: 'MSc_diss_img',
-  fileFormat: 'SHP'
-});
-
 //STEP 7: CREATING INDIVIDUAL INDICES VARIABLES FOR QGIS VIZ
 
-//7.1 - NDVI 
+//7.1 NDVI 
 var ndvi_S2 = S2.select('NDVI').median().clip(aoi); //here i am making an image of NDVI so i can export it
   //seen similar thing here: https://www.youtube.com/watch?v=qZfiMgwI94o
 
@@ -292,8 +285,7 @@ Export.image.toDrive({
   maxPixels: 1e13
 });
 
-
-//7.2 - FALSE COLOR 
+//7.2 FALSE COLOR 
 var false_col = S2.select("B8", "B4", "B3").median().clip(aoi);
 
 Export.image.toDrive({
@@ -305,7 +297,7 @@ Export.image.toDrive({
   maxPixels: 1e13
 });
 
-//7.3 - CMRI IMAGE
+//7.3 CMRI IMAGE
 var CMRI = S2.select("CMRI").median().clip(aoi);
 
 Export.image.toDrive({
@@ -317,29 +309,34 @@ Export.image.toDrive({
   maxPixels: 1e13
 });
 
-//STEP 8: CALCULATING PRE IRMA MANGROVE AREA 2016/17
-  //We can use reduceRegion with a Sum reducer to calculate total area
 
-var getPI = classed.multiply(ee.Image.pixelArea()).divide(10000).reduceRegion({ //divide(10000) is what gives us the acres
+//7.4 NDWI IMAGE
+var NDWI = S2.select("NDWI").median().clip(aoi);
+
+Export.image.toDrive({
+  image: NDWI,
+  description: 'NDWI_pre_idai',
+  scale: 30,
+  region: aoi,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e13
+});
+
+
+Export.table.toDrive({
+  collection: aoi,
+  description: 'aoi_IDAI',
+  folder: 'MSc_diss_img',
+  fileFormat: 'SHP'
+});
+
+// STEP 8: CALCULATING THE TOTAL MANGROVE AREA 
+var getPI = classed.multiply(ee.Image.pixelArea()).divide(10000).reduceRegion({
    reducer:ee.Reducer.sum(),
    geometry:aoi,
-   scale: 30, //NB: If you make this any smaller it will time out 
+   scale: 50,
    maxPixels:1e13,
    tileScale: 16
 }).get('classification');
 
-print(getPI, 'Mangrove Extent in ha');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print(getPI, 'Mangrove Extent pre-Idai in ha');
