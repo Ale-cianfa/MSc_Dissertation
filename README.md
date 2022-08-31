@@ -7,7 +7,7 @@ Supervisor: Prof. Mat Disney, UCL Geography
 
 **Software Requirements:**
 
-- Google Earth Engine (GEE): [here](https://earthengine.google.com)
+- Google Earth Engine (GEE)
 - QGIS version 3.22
 - RStudio version 1.4.1106
 
